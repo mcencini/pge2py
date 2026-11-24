@@ -2,7 +2,7 @@ name: release
 
 # Build the wheel (with the Octave WebAssembly build and the pinned toolboxes)
 # and publish it to PyPI with a trusted publisher (no API token).
-# Runs when a GitHub release is published; a manual run publishes to TestPyPI.
+# Runs when a GitHub release is published; a manual run only builds and checks.
 
 on:
   release:
@@ -46,21 +46,3 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
-
-  publish-testpypi:
-    if: github.event_name == 'workflow_dispatch'
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/pge2py
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
