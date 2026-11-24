@@ -235,16 +235,20 @@ def _validate_plan(psq, sys_ge, seq, row):
     return script, {"psq.mat": psq._mat, "reference.seq": ref}, finish
 
 
-def _serialize_plan(psq, filename, pislquant, params):
+def _serialize_plan(psq, filename, pislquant, params, sysGE):  # noqa: N803
     _need_psq(psq)
     r = _get_runner()
     files = {"psq.mat": psq._mat}
+    load, args = "", ""
     if params is not None:
         files["params.mat"] = params._mat
+        load += f"load('{r.work}/params.mat');"
+        args += ", 'params', params"
+    if sysGE is not None:
+        load += _SYS_GE.format(**sysGE.__dict__)
+        args += ", 'sysGE', sys_ge"
     script = (_PRELUDE + _SERIALIZE).format(
-        work=r.work, tb=r.tb, pislquant=int(pislquant),
-        load_params=f"load('{r.work}/params.mat');" if params is not None else "",
-        params_arg=", 'params', params" if params is not None else "")
+        work=r.work, tb=r.tb, pislquant=int(pislquant), load_params=load, params_arg=args)
 
     def finish(lines, files_out):
         path = Path(filename).resolve()
@@ -333,7 +337,8 @@ def validate(psq: PulSeg, sys_ge: SystemGE, seq=None, row=None) -> bool:
     return finish(*_call(script, files))
 
 
-def serialize(psq: PulSeg, filename, pislquant: int = 10, params: Params | None = None) -> Path:
+def serialize(psq: PulSeg, filename, pislquant: int = 10, params: Params | None = None,
+              sysGE: SystemGE | None = None) -> Path:  # noqa: N803 (MATLAB name)
     """``pge2.serialize``: write the ``.pge`` file for the scanner.
 
     Parameters
@@ -344,6 +349,9 @@ def serialize(psq: PulSeg, filename, pislquant: int = 10, params: Params | None 
         Number of ADC events Auto Prescan uses to set the receive gain.
     params : Params, optional
         The result of :func:`check`.
+    sysGE : SystemGE, optional
+        The result of :func:`opts`, if ``params`` is not given (one of the two
+        is required, as in MATLAB).
     """
-    script, files, finish = _serialize_plan(psq, filename, pislquant, params)
+    script, files, finish = _serialize_plan(psq, filename, pislquant, params, sysGE)
     return finish(*_call(script, files))

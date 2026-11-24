@@ -31,7 +31,7 @@ async def validate(psq, sys_ge, seq=None, row=None):
     return finish(*await _acall(script, files))
 
 
-async def serialize(psq, filename, pislquant=10, params=None):
+async def serialize(psq, filename, pislquant=10, params=None, sysGE=None):  # noqa: N803
     """Coroutine version of ``pge2.serialize``."""
-    script, files, finish = _serialize_plan(psq, filename, pislquant, params)
+    script, files, finish = _serialize_plan(psq, filename, pislquant, params, sysGE)
     return finish(*await _acall(script, files))

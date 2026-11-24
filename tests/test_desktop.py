@@ -56,6 +56,9 @@ def test_chain(tmp_path):
     assert pge2.validate(psq, sys_ge)  # reference defaults to the sequence given to fromSeq
     out = pge2.serialize(psq, tmp_path / "gre.pge", pislquant=2, params=params)
     assert out.stat().st_size > 0
+    assert pge2.serialize(psq, tmp_path / "gre2.pge", pislquant=2, sysGE=sys_ge).stat().st_size > 0
+    with pytest.raises(pge2.PGE2Error, match="params or sysGE"):
+        pge2.serialize(psq, tmp_path / "gre3.pge")
     # a .seq file works as well as a Sequence object
     seq.write(str(tmp_path / "gre.seq"))
     assert [s.layout for s in pulseg.fromSeq(tmp_path / "gre.seq").segments] == ["ABCD", "ABED", "ABED"]
