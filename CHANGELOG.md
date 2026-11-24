@@ -4,9 +4,10 @@
 
 First release.
 
-- `pge2py.GE`: `from_seq`, `check`, `validate`, `serialize` (and the
-  `a`-prefixed coroutines) run the official pulseg and pge2 MATLAB toolboxes on
-  a pypulseq sequence.
+- The calls of the MATLAB toolboxes, on a pypulseq sequence:
+  `pulseg.fromSeq`, `pge2.opts`, `pge2.check`, `pge2.validate`,
+  `pge2.serialize` (`import pge2py as pge2; from pge2py import pulseg`), and
+  coroutine versions in `pge2py.aio`.
 - In the browser (Pyodide, JupyterLite): GNU Octave 10.3 compiled to
   WebAssembly (emscripten-forge) is bundled in the wheel and runs in a Web
   Worker. Calls are synchronous where the browser supports JSPI (tested in

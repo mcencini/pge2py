@@ -6,7 +6,8 @@ import numpy as np
 import pypulseq as pp
 import pytest
 
-import pge2py
+import pge2py as pge2
+from pge2py import pulseg
 
 pytestmark = pytest.mark.skipif(not shutil.which("octave-cli") and not shutil.which("octave"),
                                 reason="GNU Octave not installed")
@@ -41,33 +42,35 @@ def gre(system, n=32, n_dummy=4, pislquant=2):
     return seq
 
 
-@pytest.fixture(scope="module")
-def ge():
-    return pge2py.GE()
-
-
-def test_chain(ge, tmp_path):
-    report = ge.from_seq(gre(pp.Opts(**GE_SYSTEM)))
-    assert [s.trid for s in report.segments] == [1, 2, 3]
-    assert [s.n_instances for s in report.segments] == [4, 2, 32]
-    assert [s.layout for s in report.segments] == ["ABCD", "ABED", "ABED"]
-    params = ge.check()
+def test_chain(tmp_path):
+    seq = gre(pp.Opts(**GE_SYSTEM))
+    psq = pulseg.fromSeq(seq)
+    assert [s.trid for s in psq.segments] == [1, 2, 3]
+    assert [s.n_instances for s in psq.segments] == [4, 2, 32]
+    assert [s.layout for s in psq.segments] == ["ABCD", "ABED", "ABED"]
+    assert psq.nSegments == 3
+    sys_ge = pge2.opts(100e-6, 100e-6, 0.25, 5, 20, "xrm")
+    params = pge2.check(psq, sys_ge, PNSwt=(1, 1, 1))
     assert set(params) == {"b1max", "gmax", "smax"} and params["b1max"] > 0
-    assert ge.validate()
-    pge = ge.serialize(tmp_path / "gre.pge", pislquant=2)
-    assert pge.stat().st_size > 0
+    assert pge2.validate(psq, sys_ge, seq)
+    assert pge2.validate(psq, sys_ge)  # reference defaults to the sequence given to fromSeq
+    out = pge2.serialize(psq, tmp_path / "gre.pge", pislquant=2, params=params)
+    assert out.stat().st_size > 0
+    # a .seq file works as well as a Sequence object
+    seq.write(str(tmp_path / "gre.seq"))
+    assert [s.layout for s in pulseg.fromSeq(tmp_path / "gre.seq").segments] == ["ABCD", "ABED", "ABED"]
 
 
-def test_wrong_raster_is_rejected(ge):
+def test_wrong_raster_is_rejected():
     system = pp.Opts(**{**GE_SYSTEM, "rf_raster_time": 1e-6, "adc_raster_time": 1e-7,
                         "grad_raster_time": 10e-6, "block_duration_raster": 10e-6})
-    ge.from_seq(gre(system))
-    with pytest.raises(pge2py.PGE2Error, match="RF_UPDATE_TIME"):
-        ge.check()
+    psq = pulseg.fromSeq(gre(system))
+    with pytest.raises(pge2.PGE2Error, match="RF_UPDATE_TIME"):
+        pge2.check(psq, pge2.opts())
 
 
-def test_missing_trid_is_rejected(ge):
+def test_missing_trid_is_rejected():
     seq = pp.Sequence()
     seq.add_block(pp.make_delay(1e-3))
-    with pytest.raises(pge2py.PGE2Error, match="TRID"):
-        ge.from_seq(seq)
+    with pytest.raises(pge2.PGE2Error, match="TRID"):
+        pulseg.fromSeq(seq)
