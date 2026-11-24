@@ -1,0 +1,66 @@
+name: release
+
+# Build the wheel (with the Octave WebAssembly build and the pinned toolboxes)
+# and publish it to PyPI with a trusted publisher (no API token).
+# Runs when a GitHub release is published; a manual run publishes to TestPyPI.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build assets (Octave wasm, toolboxes)
+        run: python tools/build_assets.py
+      - name: Build wheel and sdist
+        run: |
+          python -m pip install build
+          python -m build --sdist
+          python -m build --wheel   # from the checkout: the sdist leaves the assets out
+      - name: Check the wheel contents
+        run: python tools/check_wheel.py dist/*.whl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-pypi:
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pge2py
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-testpypi:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/pge2py
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

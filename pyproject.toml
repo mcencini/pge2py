@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pge2py"
+dynamic = ["version"]
+description = "pulseg and pge2 (Pulseq on GE) for pypulseq sequences, in the browser (Pyodide, JupyterLite) or on the desktop (GNU Octave)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT AND GPL-3.0-or-later"
+license-files = ["LICENSE", "LICENSES/*"]
+authors = [{ name = "Matteo Cencini" }]
+keywords = ["mri", "pulseq", "ge", "pge2", "pulseg", "pyodide", "jupyterlite"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Medical Science Apps.",
+  "Programming Language :: Python :: 3",
+]
+dependencies = ["pypulseq>=1.4"]
+
+[project.optional-dependencies]
+octave = ["oct2py>=5.6"]
+test = ["pytest", "oct2py>=5.6"]
+
+[project.urls]
+Source = "https://github.com/mcencini/pge2py"
+
+[tool.hatch.version]
+path = "src/pge2py/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pge2py"]
+# built by tools/build_assets.py, not versioned
+artifacts = ["src/pge2py/_assets/*"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["src/pge2py/_assets", "build"]
