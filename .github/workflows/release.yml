@@ -1,15 +1,24 @@
 name: release
 
-# Cut a release by pushing a tag vX.Y.Z (X.Y.Z = pge2py.__version__):
-# build the wheel (with the Octave WebAssembly build and the pinned toolboxes),
-# publish it to PyPI with a trusted publisher (no API token), then create the
-# GitHub release with the CHANGELOG.md section of that version.
+# Cut a release with a tag vX.Y.Z (X.Y.Z = pge2py.__version__): push the tag,
+# or create the release (and its tag) in the GitHub web interface.
+# Builds the wheel (with the Octave WebAssembly build and the pinned toolboxes),
+# publishes it to PyPI with a trusted publisher (no API token), and attaches the
+# files to the GitHub release (creating it, with the CHANGELOG.md section, if
+# it does not exist). Both events may fire for one tag: the second run finds
+# the files already on PyPI and the release already there.
 # A manual run only builds and checks.
 
 on:
   push:
     tags: ["v*"]
+  release:
+    types: [published]
   workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -53,6 +62,8 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
 
   github-release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -71,5 +82,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          awk -v v="$version" '$0 ~ "^## " {p = ($2 == v)} p && !/^## /' CHANGELOG.md > notes.md
-          gh release create "$GITHUB_REF_NAME" dist/* --title "pge2py $version" --notes-file notes.md
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          else
+            awk -v v="$version" '$0 ~ "^## " {p = ($2 == v)} p && !/^## /' CHANGELOG.md > notes.md
+            gh release create "$GITHUB_REF_NAME" dist/* --title "pge2py $version" --notes-file notes.md
+          fi

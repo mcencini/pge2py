@@ -65,6 +65,7 @@ the Pulseq, pulseg and pge2 toolboxes (MIT); see `LICENSES/`.
 ## Releases
 
 Versions follow `pge2py.__version__`. A release is cut by adding its section
-to `CHANGELOG.md`, setting `__version__`, and pushing the tag `vX.Y.Z` on that
-commit: `.github/workflows/release.yml` builds the wheel, publishes it to PyPI
-and creates the GitHub release.
+to `CHANGELOG.md`, setting `__version__`, and creating the tag `vX.Y.Z` on that
+commit, by pushing it or by creating the release in the GitHub web interface:
+`.github/workflows/release.yml` builds the wheel, publishes it to PyPI and
+attaches the files to the GitHub release.
