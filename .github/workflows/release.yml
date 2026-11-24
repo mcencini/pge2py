@@ -1,12 +1,14 @@
 name: release
 
-# Build the wheel (with the Octave WebAssembly build and the pinned toolboxes)
-# and publish it to PyPI with a trusted publisher (no API token).
-# Runs when a GitHub release is published; a manual run only builds and checks.
+# Cut a release by pushing a tag vX.Y.Z (X.Y.Z = pge2py.__version__):
+# build the wheel (with the Octave WebAssembly build and the pinned toolboxes),
+# publish it to PyPI with a trusted publisher (no API token), then create the
+# GitHub release with the CHANGELOG.md section of that version.
+# A manual run only builds and checks.
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
@@ -17,6 +19,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(python -c "import re; print(re.search(r'__version__ = \"(.+)\"', open('src/pge2py/__init__.py').read())[1])")
+          test "v$version" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != v$version"; exit 1; }
       - name: Build assets (Octave wasm, toolboxes)
         run: python tools/build_assets.py
       - name: Build wheel and sdist
@@ -32,7 +39,7 @@ jobs:
           path: dist/
 
   publish-pypi:
-    if: github.event_name == 'release'
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -46,3 +53,23 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '$0 ~ "^## " {p = ($2 == v)} p && !/^## /' CHANGELOG.md > notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* --title "pge2py $version" --notes-file notes.md

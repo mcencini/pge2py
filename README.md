@@ -63,3 +63,10 @@ python -m build --wheel
 
 pge2py is MIT licensed. The wheel bundles GNU Octave (GPL-3.0-or-later) and
 the Pulseq, pulseg and pge2 toolboxes (MIT); see `LICENSES/`.
+
+## Releases
+
+Versions follow `pge2py.__version__`. A release is cut by adding its section
+to `CHANGELOG.md`, setting `__version__`, and pushing the tag `vX.Y.Z` on that
+commit: `.github/workflows/release.yml` builds the wheel, publishes it to PyPI
+and creates the GitHub release.
