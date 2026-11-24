@@ -32,7 +32,7 @@ class Segment:
         return "".join(out)
 
 
-@dataclass
+@dataclass(repr=False)
 class SegmentReport:
     """What ``pulseg.fromSeq`` made of a sequence."""
 
@@ -55,6 +55,9 @@ class SegmentReport:
             lines += ["", f"pulseg.fromSeq printed {len(self.warnings)} warning(s); the first one:"]
             lines.append("  " + self.warnings[0].replace("\n", "\n  "))
         return "\n".join(lines)
+
+    def __repr__(self) -> str:
+        return str(self)
 
     def _repr_pretty_(self, p, cycle):
         p.text(str(self))

@@ -65,7 +65,7 @@ last_messages: list[str] = []
 
 
 # -- values passed between calls ----------------------------------------------
-@dataclass
+@dataclass(repr=False)
 class PulSeg(SegmentReport):
     """What ``pulseg.fromSeq`` returns: the PulSeg object ``psq``.
 
